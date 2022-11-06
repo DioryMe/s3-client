@@ -1,44 +1,39 @@
 import { S3Client as S3SDKClient, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 
 class S3Client {
-  address: string | undefined
+  address: string
+  type: string
   client: S3SDKClient
 
-  constructor(address?: string) {
+  constructor(address: string) {
     this.address = address
+    this.type = this.constructor.name
     this.client = new S3SDKClient({ region: 'eu-west-1' })
   }
 
-  readTextItem = async (url: string) => {
+  readTextItem = async (key: string) => {
     console.log('s3 read item')
-    return this.readItem(url)
+    return this.readItem(key)
   }
 
-  readItem = async (url: string) => {
-    console.log('s3 read text item', url)
-    const objectParams = { Bucket: this.address, Key: url }
+  readItem = async (key: string) => {
+    console.log('s3 read text item', key)
+    const objectParams = { Bucket: this.address, Key: key }
     const getCommand = new GetObjectCommand(objectParams)
     const response = await this.client.send(getCommand)
-    // return response.Body?.transformToString()
-    const textItemString = await response.Body?.transformToString()
-    // console.log('bodystring', s3BodyString)
-    return textItemString
-    // return readFile(url, { encoding: 'utf8' })
+    return response.Body?.transformToString()
+    // const textItemString = await response.Body?.transformToString()
+    // console.log('bodystring', textItemString)
+    // return textItemString
   }
 
-  writeTextItem = async (url: string, fileContent: string) => {
+  writeTextItem = async (key: string, fileContent: string) => {
     console.log('s3 write text item')
-    return this.writeItem(url, fileContent)
+    return this.writeItem(key, fileContent)
   }
 
-  writeItem = async (url: string, fileContent: Buffer | string) => {
-    console.log('s3 write item', url, fileContent.length)
-    // TODO: Remove after roomClient refactor is done ("don't repeat address")
-    const splittedUrl = url.split('/')
-    splittedUrl.shift()
-    const key = splittedUrl.join('/')
-    // const key = url
-
+  writeItem = async (key: string, fileContent: Buffer | string) => {
+    console.log('s3 write item', key, fileContent.length)
     const objectParams = { Body: fileContent, Bucket: this.address, Key: key }
     const putCommand = new PutObjectCommand(objectParams)
     return this.client.send(putCommand).then((response) => {
@@ -46,8 +41,8 @@ class S3Client {
     })
   }
 
-  deleteItem = async (url: string) => {
-    console.log('s3 delete item', url)
+  deleteItem = async (key: string) => {
+    console.log('s3 delete item', key)
     // if (existsSync(url)) {
     //   return rm(url)
     // }
