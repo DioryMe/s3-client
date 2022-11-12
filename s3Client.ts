@@ -2,13 +2,28 @@ import { S3Client as S3SDKClient, GetObjectCommand, PutObjectCommand } from '@aw
 
 class S3Client {
   address: string
+  keyPrefix: string | null = null
   type: string
   client: S3SDKClient
 
   constructor(address: string) {
-    this.address = address
+    const splittedAddress = address.split('/')
+    if (splittedAddress.length > 0) {
+      this.address = splittedAddress[0]
+      splittedAddress.shift()
+      this.keyPrefix = splittedAddress.join('/')
+    } else {
+      this.address = address
+    }
     this.type = this.constructor.name
     this.client = new S3SDKClient({ region: 'eu-west-1' })
+  }
+
+  keyWithPrefix = (key: string) => {
+    if (this.keyPrefix) {
+      return [this.keyPrefix, key].join('/')
+    }
+    return key
   }
 
   readTextItem = async (key: string) => {
@@ -17,8 +32,8 @@ class S3Client {
   }
 
   readItem = async (key: string) => {
-    console.log('s3 read text item', key)
-    const objectParams = { Bucket: this.address, Key: key }
+    console.log('s3 read text item', this.keyWithPrefix(key))
+    const objectParams = { Bucket: this.address, Key: this.keyWithPrefix(key) }
     const getCommand = new GetObjectCommand(objectParams)
     const response = await this.client.send(getCommand)
     return response.Body?.transformToString()
@@ -33,8 +48,12 @@ class S3Client {
   }
 
   writeItem = async (key: string, fileContent: Buffer | string) => {
-    console.log('s3 write item', key, fileContent.length)
-    const objectParams = { Body: fileContent, Bucket: this.address, Key: key }
+    console.log('s3 write item', this.keyWithPrefix(key), fileContent.length)
+    const objectParams = {
+      Body: fileContent,
+      Bucket: this.address,
+      Key: this.keyWithPrefix(key),
+    }
     const putCommand = new PutObjectCommand(objectParams)
     return this.client.send(putCommand).then((response) => {
       return response.$metadata.httpStatusCode == 200
