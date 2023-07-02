@@ -2,21 +2,49 @@ import { S3Client as S3SDKClient, GetObjectCommand, PutObjectCommand } from '@aw
 
 class S3Client {
   address: string
-  keyPrefix: string | null = null
+  keyPrefix: string | null
+  bucketName: string
   type: string
   client: S3SDKClient
 
   constructor(address: string) {
-    const splittedAddress = address.split('/')
-    if (splittedAddress.length > 0) {
-      this.address = splittedAddress[0]
-      splittedAddress.shift()
-      this.keyPrefix = splittedAddress.join('/')
-    } else {
-      this.address = address
-    }
-    this.type = this.constructor.name
+    // if (!process.env.AWS_REGION) {
+    //   throw new Error('Please provide AWS_REGION env')
+    // }
+    const { bucketName, keyPrefix } = this.splitAddress(address)
+    this.address = address[address.length - 1] === '/' ? address : address + '/'
+    this.keyPrefix = keyPrefix
+    this.bucketName = bucketName
+    // Set correct region
     this.client = new S3SDKClient({ region: 'eu-west-1' })
+    // this.client = new S3SDKClient({ region: process.env.AWS_REGION })
+    // Call super()
+    this.type = this.constructor.name
+  }
+
+  splitAddress = (url: string) => {
+    if (!url.startsWith('s3://')) {
+      throw new Error("S3Client address doesn't start with s3://")
+    }
+    let bucketName, keyPrefix
+    // Bucket name
+    const addressWithoutS3 = url.split('s3://')[1]
+    const splittedAddress = addressWithoutS3.split('/')
+    bucketName = splittedAddress[0]
+    splittedAddress.shift()
+    // Trim last '/'
+    if (splittedAddress[splittedAddress.length - 1] == '') {
+      splittedAddress.pop()
+    }
+    // If no keyPrefix
+    if (!splittedAddress.length) {
+      keyPrefix = null
+      return { bucketName, keyPrefix }
+    }
+    // If keyPrefix
+    keyPrefix = splittedAddress.join('/')
+
+    return { bucketName, keyPrefix }
   }
 
   keyWithPrefix = (key: string) => {
@@ -33,7 +61,7 @@ class S3Client {
 
   readItem = async (key: string) => {
     console.log('s3 read text item', this.keyWithPrefix(key))
-    const objectParams = { Bucket: this.address, Key: this.keyWithPrefix(key) }
+    const objectParams = { Bucket: this.bucketName, Key: this.keyWithPrefix(key) }
     const getCommand = new GetObjectCommand(objectParams)
     const response = await this.client.send(getCommand)
     return response.Body?.transformToString()

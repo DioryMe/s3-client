@@ -18,7 +18,9 @@
   "scripts": {
     "build": "tsc",
     "build-watch": "yarn build --watch",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "test": "jest .",
+    "test:watch": "jest . --watch"
   },
   "prettier": {
     "tabWidth": 2,
