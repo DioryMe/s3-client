@@ -1,4 +1,9 @@
-import { S3Client as S3SDKClient, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client as S3SDKClient,
+  GetObjectCommand,
+  PutObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3'
 
 class S3Client {
   address: string
@@ -24,7 +29,7 @@ class S3Client {
 
   splitAddress = (url: string) => {
     if (!url.startsWith('s3://')) {
-      throw new Error("S3Client address doesn't start with s3://")
+      throw new Error(`S3Client address doesn't start with s3:// (${url})`)
     }
     let bucketName, keyPrefix
     // Bucket name
@@ -45,6 +50,15 @@ class S3Client {
     keyPrefix = splittedAddress.join('/')
 
     return { bucketName, keyPrefix }
+  }
+
+  verify = async () => {
+    const command = new ListObjectsV2Command({
+      Bucket: this.bucketName,
+      MaxKeys: 1,
+    })
+    await this.client.send(command)
+    return true
   }
 
   keyWithPrefix = (key: string) => {
@@ -79,7 +93,7 @@ class S3Client {
     console.log('s3 write item', this.keyWithPrefix(key), fileContent.length)
     const objectParams = {
       Body: fileContent,
-      Bucket: this.address,
+      Bucket: this.bucketName,
       Key: this.keyWithPrefix(key),
     }
     const putCommand = new PutObjectCommand(objectParams)
