@@ -3,6 +3,9 @@ import {
   GetObjectCommand,
   PutObjectCommand,
   ListObjectsV2Command,
+  HeadObjectCommand,
+  S3ServiceException,
+  DeleteObjectCommand,
 } from '@aws-sdk/client-s3'
 
 class S3Client {
@@ -16,6 +19,9 @@ class S3Client {
     // if (!process.env.AWS_REGION) {
     //   throw new Error('Please provide AWS_REGION env')
     // }
+    if (!address) {
+      throw new Error('Please provide address for new S3Client()')
+    }
     const { bucketName, keyPrefix } = this.splitAddress(address)
     this.address = address[address.length - 1] === '/' ? address : address + '/'
     this.keyPrefix = keyPrefix
@@ -82,6 +88,24 @@ class S3Client {
     // const textItemString = await response.Body?.transformToString()
     // console.log('bodystring', textItemString)
     // return textItemString
+  }
+
+  exists = async (key: string) => {
+    try {
+      const objectParams = { Bucket: this.bucketName, Key: this.keyWithPrefix(key) }
+      console.log('objpara', objectParams)
+      const headCommand = new HeadObjectCommand(objectParams)
+      await this.client.send(headCommand)
+
+      return true
+    } catch (err) {
+      if (err instanceof S3ServiceException) {
+        return false
+      }
+
+      console.log('unknown error', err)
+      throw err
+    }
   }
 
   writeTextItem = async (key: string, fileContent: string) => {
