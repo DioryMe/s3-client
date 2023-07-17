@@ -128,9 +128,14 @@ class S3Client {
 
   deleteItem = async (key: string) => {
     console.log('s3 delete item', key)
-    // if (existsSync(url)) {
-    //   return rm(url)
-    // }
+    const objectParams = {
+      Bucket: this.bucketName,
+      Key: this.keyWithPrefix(key),
+    }
+    const deleteCommand = new DeleteObjectCommand(objectParams)
+    return this.client.send(deleteCommand).then((response) => {
+      return response.$metadata.httpStatusCode == 200
+    })
   }
 }
 
