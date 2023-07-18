@@ -151,7 +151,7 @@ class S3Client {
   }
 
   deleteList = async (key: string, token?: string) => {
-    const list = await this.list(key)
+    const list = await this.listCommand(key)
     if (list.KeyCount && list.Contents) {
       const deleteCommand = new DeleteObjectsCommand({
         Bucket: this.bucketName,
@@ -170,7 +170,7 @@ class S3Client {
     return list
   }
 
-  list = async (key: string, token?: string) => {
+  listCommand = async (key: string, token?: string) => {
     const listCommand = new ListObjectsV2Command({
       Bucket: this.bucketName,
       Prefix: this.keyWithPrefix(key),
@@ -178,6 +178,13 @@ class S3Client {
     })
     const list = await this.client.send(listCommand)
     return list
+  }
+
+  // TODO: Unify all the client.list outputs
+  // - currently this is S3 specific...
+  list = async (key: string) => {
+    const list = await this.listCommand(key)
+    return list.Contents ? list.Contents : []
   }
 }
 
