@@ -43,7 +43,7 @@ describe('verifyAndSplitAddress', () => {
     })
   })
 
-  describe('with two or more keyPrefixex', () => {
+  describe('with two or more keyPrefixes', () => {
     let client: S3Client
     it('two with /', () => {
       client = new S3Client('s3://jvalanen-test3/diograph-stuff/two/')

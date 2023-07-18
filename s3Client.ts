@@ -6,6 +6,7 @@ import {
   HeadObjectCommand,
   S3ServiceException,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
 } from '@aws-sdk/client-s3'
 
 class S3Client {
@@ -114,16 +115,15 @@ class S3Client {
   }
 
   writeItem = async (key: string, fileContent: Buffer | string) => {
-    console.log('s3 write item', this.keyWithPrefix(key), fileContent.length)
+    console.log('s3 write item', this.bucketName, this.keyWithPrefix(key), fileContent.length)
     const objectParams = {
       Body: fileContent,
       Bucket: this.bucketName,
       Key: this.keyWithPrefix(key),
     }
     const putCommand = new PutObjectCommand(objectParams)
-    return this.client.send(putCommand).then((response) => {
-      return response.$metadata.httpStatusCode == 200
-    })
+    const response = await this.client.send(putCommand)
+    return response.$metadata.httpStatusCode == 200
   }
 
   deleteItem = async (key: string) => {
@@ -136,6 +136,48 @@ class S3Client {
     return this.client.send(deleteCommand).then((response) => {
       return response.$metadata.httpStatusCode == 200
     })
+  }
+
+  // based on: https://www.codemzy.com/blog/delete-s3-folder-nodejs
+  // - what if key doesn't end with '/'?
+  deleteFolder = async (key: string) => {
+    const list = await this.deleteList(key)
+    // Repeat if over 1000 files to be deleted
+    let token = list.NextContinuationToken
+    while (token) {
+      this.deleteList(key, token)
+      token = list.NextContinuationToken
+    }
+  }
+
+  deleteList = async (key: string, token?: string) => {
+    const list = await this.list(key)
+    if (list.KeyCount && list.Contents) {
+      const deleteCommand = new DeleteObjectsCommand({
+        Bucket: this.bucketName,
+        Delete: {
+          Objects: list.Contents.map((item) => ({ Key: item.Key })),
+        },
+      })
+      let deleted = await this.client.send(deleteCommand)
+      // log any errors deleting files
+      if (deleted.Errors) {
+        deleted.Errors.map((error) =>
+          console.log(`${error.Key} could not be deleted - ${error.Code}`),
+        )
+      }
+    }
+    return list
+  }
+
+  list = async (key: string, token?: string) => {
+    const listCommand = new ListObjectsV2Command({
+      Bucket: this.bucketName,
+      Prefix: this.keyWithPrefix(key),
+      ...(token ? { ContinuationToken: token } : {}),
+    })
+    const list = await this.client.send(listCommand)
+    return list
   }
 }
 
