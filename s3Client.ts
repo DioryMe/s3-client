@@ -8,8 +8,9 @@ import {
   DeleteObjectCommand,
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3'
+import { ConnectionClient } from '@diograph/diograph'
 
-class S3Client {
+class S3Client implements ConnectionClient {
   address: string
   keyPrefix: string | null
   bucketName: string
@@ -76,19 +77,37 @@ class S3Client {
   }
 
   readTextItem = async (key: string) => {
-    console.log('s3 read item')
-    return this.readItem(key)
+    console.log('s3 read text item', this.keyWithPrefix(key))
+    const responseBody = await this.sendGetCommand(key)
+
+    return responseBody.transformToString()
   }
 
-  readItem = async (key: string) => {
-    console.log('s3 read text item', this.keyWithPrefix(key))
+  sendGetCommand = async (key: string) => {
     const objectParams = { Bucket: this.bucketName, Key: this.keyWithPrefix(key) }
     const getCommand = new GetObjectCommand(objectParams)
     const response = await this.client.send(getCommand)
-    return response.Body?.transformToString()
-    // const textItemString = await response.Body?.transformToString()
-    // console.log('bodystring', textItemString)
-    // return textItemString
+
+    if (response.$metadata.httpStatusCode != 200 || !response.Body) {
+      throw new Error(`Response failed (status: ${response.$metadata}) or didn't contain body`)
+    }
+
+    return response.Body
+  }
+
+  readItem = async (key: string) => {
+    console.log('s3 read item', this.keyWithPrefix(key))
+    const responseBody = await this.sendGetCommand(key)
+    const binaryData = await responseBody.transformToString()
+
+    return Buffer.from(binaryData)
+  }
+
+  readToStream = async (key: string) => {
+    console.log('s3 read to stream', this.keyWithPrefix(key))
+    const responseBody = await this.sendGetCommand(key)
+
+    return responseBody.transformToWebStream()
   }
 
   exists = async (key: string) => {
@@ -141,11 +160,12 @@ class S3Client {
   // based on: https://www.codemzy.com/blog/delete-s3-folder-nodejs
   // - what if key doesn't end with '/'?
   deleteFolder = async (key: string) => {
-    const list = await this.deleteList(key)
+    const validKey = key[key.length - 1] != '/' ? `${key}/` : key
+    const list = await this.deleteList(validKey)
     // Repeat if over 1000 files to be deleted
     let token = list.NextContinuationToken
     while (token) {
-      this.deleteList(key, token)
+      this.deleteList(validKey, token)
       token = list.NextContinuationToken
     }
   }
@@ -184,7 +204,7 @@ class S3Client {
   // - currently this is S3 specific...
   list = async (key: string) => {
     const list = await this.listCommand(key)
-    return list.Contents ? list.Contents : []
+    return list.Contents ? list.Contents.map((c) => JSON.stringify(c)) : []
   }
 }
 

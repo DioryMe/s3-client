@@ -922,6 +922,13 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@diograph/diograph@next":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@diograph/diograph/-/diograph-0.1.1.tgz#2ee1a4970e9fbc9b2148623e27a05b91fef3e80d"
+  integrity sha512-AyQaVjhxEu4vootrDuT20jkw/FepRri91mMI4pvTuFLI0F6Dvz3MP06eWYGw9d+NjwwA8AF7gVoapJPd176gnA==
+  dependencies:
+    uuid "^8.3.2"
+
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@istanbuljs/load-nyc-config/-/load-nyc-config-1.1.0.tgz#fd3db1d59ecf7cf121e80650bb86712f9b55eced"
@@ -1979,13 +1986,6 @@ diff-sequences@^29.4.3:
   version "29.4.3"
   resolved "https://registry.yarnpkg.com/diff-sequences/-/diff-sequences-29.4.3.tgz#9314bc1fabe09267ffeca9cbafc457d8499a13f2"
   integrity sha512-ofrBgwpPhCD85kMKtE9RYFFq6OC1A89oW2vvgWZNCwxrUpRUILopY7lsYyMDSjc8g6U6aiO0Qubg6r4Wgt5ZnA==
-
-diograph-js@next:
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/diograph-js/-/diograph-js-0.0.7.tgz#45cf528cd9e48d342a7ed98d218c53502a4316a9"
-  integrity sha512-l+q+9lPQFOQpRyc9FbLSlku3qaMfla6ql2UUl/0Yhhvv7K2THRG8QbBRqpV9hp5OkBQjXAbp1sYEBteBJMrh4A==
-  dependencies:
-    uuid "^8.3.2"
 
 electron-to-chromium@^1.4.431:
   version "1.4.454"

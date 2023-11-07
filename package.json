@@ -10,7 +10,7 @@
   ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.209.0",
-    "diograph-js": "next"
+    "@diograph/diograph": "next"
   },
   "devDependencies": {
     "@types/jest": "^29.2.2",
