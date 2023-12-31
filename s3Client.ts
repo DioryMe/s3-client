@@ -9,6 +9,7 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3'
 import { ConnectionClient } from '@diograph/diograph'
+import { Readable } from 'stream'
 
 class S3Client implements ConnectionClient {
   address: string
@@ -78,34 +79,21 @@ class S3Client implements ConnectionClient {
 
   readTextItem = async (key: string) => {
     console.log('s3 read text item', this.keyWithPrefix(key))
-    const responseBody = await this.sendGetCommand(key)
+    const responseBody = await this.getObjectBody(key)
 
     return responseBody.transformToString()
   }
 
-  sendGetCommand = async (key: string) => {
-    const objectParams = { Bucket: this.bucketName, Key: this.keyWithPrefix(key) }
-    const getCommand = new GetObjectCommand(objectParams)
-    const response = await this.client.send(getCommand)
-
-    if (response.$metadata.httpStatusCode != 200 || !response.Body) {
-      throw new Error(`Response failed (status: ${response.$metadata}) or didn't contain body`)
-    }
-
-    return response.Body
-  }
-
   readItem = async (key: string) => {
     console.log('s3 read item', this.keyWithPrefix(key))
-    const responseBody = await this.sendGetCommand(key)
-    const binaryData = await responseBody.transformToString()
+    const response = await this.getObjectBody(key)
 
-    return Buffer.from(binaryData)
+    return this.streamToBuffer(response as Readable)
   }
 
   readToStream = async (key: string) => {
     console.log('s3 read to stream', this.keyWithPrefix(key))
-    const responseBody = await this.sendGetCommand(key)
+    const responseBody = await this.getObjectBody(key)
 
     return responseBody.transformToWebStream()
   }
@@ -205,6 +193,30 @@ class S3Client implements ConnectionClient {
   list = async (key: string) => {
     const list = await this.listCommand(key)
     return list.Contents ? list.Contents.map((c) => JSON.stringify(c)) : []
+  }
+
+  // private
+
+  streamToBuffer = async (stream: Readable) => {
+    return new Promise((resolve: (value: Buffer) => void, reject: (reason: Error) => void) => {
+      const chunks: Buffer[] = []
+
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk))
+      stream.on('end', () => resolve(Buffer.concat(chunks)))
+      stream.on('error', (error: Error) => reject(error))
+    })
+  }
+
+  getObjectBody = async (key: string) => {
+    const objectParams = { Bucket: this.bucketName, Key: this.keyWithPrefix(key) }
+    const getCommand = new GetObjectCommand(objectParams)
+    const response = await this.client.send(getCommand)
+
+    if (response.$metadata.httpStatusCode != 200 || !response.Body) {
+      throw new Error(`Response failed (status: ${response.$metadata}) or didn't contain body`)
+    }
+
+    return response.Body
   }
 }
 
