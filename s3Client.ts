@@ -23,14 +23,6 @@ class S3Client implements ConnectionClient {
     if (!address) {
       throw new Error('Please provide address for new S3Client()')
     }
-    // if (!process.env.AWS_REGION) {
-    //   throw new Error('Please provide AWS_REGION env')
-    // }
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      if (!options || !options.credentials) {
-        throw new Error('No credentials given via ENV, please provide them in options.credentials')
-      }
-    }
 
     const { bucketName, keyPrefix } = this.splitAddress(address)
     this.address = address[address.length - 1] === '/' ? address : address + '/'
@@ -38,8 +30,7 @@ class S3Client implements ConnectionClient {
     this.bucketName = bucketName
 
     this.client = new S3SDKClient(options || { region: 'eu-west-1' })
-    // this.client = new S3SDKClient({ region: process.env.AWS_DEFAULT_REGION })
-    // Call super()
+
     this.type = this.constructor.name
   }
 
