@@ -10,7 +10,6 @@ import {
 } from '@aws-sdk/client-s3'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
 import { ConnectionClient } from '@diograph/diograph'
-import { Readable } from 'stream'
 
 class S3Client implements ConnectionClient {
   address: string
@@ -86,20 +85,23 @@ class S3Client implements ConnectionClient {
     console.log('s3 read item', this.keyWithPrefix(key))
     const response = await this.getObjectBody(key)
 
-    return this.streamToBuffer(response as Readable)
+    return this.streamToBuffer(response as ReadableStream)
   }
 
   readToStream = async (key: string) => {
     console.log('s3 read to stream', this.keyWithPrefix(key))
     const responseBody = await this.getObjectBody(key)
 
-    return responseBody.transformToWebStream()
+    return responseBody.transformToWebStream() as ReadableStream
   }
 
   exists = async (key: string) => {
     try {
-      const objectParams = { Bucket: this.bucketName, Key: this.keyWithPrefix(key) }
-      console.log('objpara', objectParams)
+      const objectParams = {
+        Bucket: this.bucketName,
+        Key: this.keyWithPrefix(key),
+      }
+
       const headCommand = new HeadObjectCommand(objectParams)
       await this.client.send(headCommand)
 
@@ -119,13 +121,15 @@ class S3Client implements ConnectionClient {
     return this.writeItem(key, fileContent)
   }
 
-  writeItem = async (key: string, fileContent: Buffer | string) => {
-    console.log('s3 write item', this.bucketName, this.keyWithPrefix(key), fileContent.length)
+  writeItem = async (key: string, fileContent: ArrayBuffer | string) => {
+    console.log('s3 write item', this.bucketName, this.keyWithPrefix(key))
+
     const objectParams = {
-      Body: fileContent,
+      Body: fileContent as any,
       Bucket: this.bucketName,
       Key: this.keyWithPrefix(key),
     }
+
     const putCommand = new PutObjectCommand(objectParams)
     const response = await this.client.send(putCommand)
     return response.$metadata.httpStatusCode == 200
@@ -195,18 +199,17 @@ class S3Client implements ConnectionClient {
 
   // private
 
-  streamToBuffer = async (stream: Readable) => {
-    return new Promise((resolve: (value: Buffer) => void, reject: (reason: Error) => void) => {
-      const chunks: Buffer[] = []
-
-      stream.on('data', (chunk: Buffer) => chunks.push(chunk))
-      stream.on('end', () => resolve(Buffer.concat(chunks)))
-      stream.on('error', (error: Error) => reject(error))
-    })
+  streamToBuffer = async (stream: ReadableStream) => {
+    const response = new Response(stream)
+    const blob = await response.blob()
+    return blob.arrayBuffer()
   }
 
   getObjectBody = async (key: string) => {
-    const objectParams = { Bucket: this.bucketName, Key: this.keyWithPrefix(key) }
+    const objectParams = {
+      Bucket: this.bucketName,
+      Key: this.keyWithPrefix(key),
+    }
     const getCommand = new GetObjectCommand(objectParams)
     const response = await this.client.send(getCommand)
 
