@@ -155,12 +155,12 @@ class S3Client implements ConnectionClient {
     // Repeat if over 1000 files to be deleted
     let token = list.NextContinuationToken
     while (token) {
-      this.deleteList(validKey, token)
+      this.deleteList(validKey /*, token */)
       token = list.NextContinuationToken
     }
   }
 
-  deleteList = async (key: string, token?: string) => {
+  deleteList = async (key: string /* , token?: string */) => {
     const list = await this.listCommand(key)
     if (list.KeyCount && list.Contents) {
       const deleteCommand = new DeleteObjectsCommand({
