@@ -10,7 +10,7 @@
   ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.209.0",
-    "@diograph/diograph": "^0.2.0-rc4"
+    "@diograph/diograph": "^0.2.2-rc2"
   },
   "devDependencies": {
     "@types/jest": "^29.2.2",
