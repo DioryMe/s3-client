@@ -9,7 +9,7 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3'
 import { AwsCredentialIdentity } from '@aws-sdk/types'
-import { ConnectionClient } from '@diograph/diograph'
+import { ConnectionClient } from '@diograph/diograph/types'
 
 class S3Client implements ConnectionClient {
   address: string
